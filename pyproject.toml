@@ -1,0 +1,23 @@
+[project]
+name = "mc-gws"
+version = "0.1.0"
+description = "Virtual Chief of Staff — unified Google Workspace + Notion CLI"
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+g = "mcgws.cli:main"
+
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

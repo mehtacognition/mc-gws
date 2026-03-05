@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Local config (contains real account details)
+CLAUDE.md
+
+# Plan docs (may contain personal details)
+docs/plans/
+
+# Pytest
+.pytest_cache/

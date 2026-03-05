@@ -1,0 +1,38 @@
+{
+  "account": "you@example.com",
+  "owner_name": "Your Name, Your Role",
+  "self_reminder_phone": "+1XXXXXXXXXX",
+  "schedule": {
+    "enabled": true,
+    "timezone": "America/New_York",
+    "briefing": "07:30",
+    "midday": "12:00",
+    "wrap": "17:00",
+    "weekly_day": "monday",
+    "skip_dates": [],
+    "quiet_mode": false
+  },
+  "briefing_sections": ["calendar", "email", "tasks", "drive", "notion", "followups"],
+  "priority_keywords": ["invoice", "contract", "deadline", "urgent"],
+  "followup_stale_days": 3,
+  "notify_max_chars": 1500,
+  "models": {
+    "scheduled": "haiku",
+    "interactive": "default"
+  },
+  "notion": {
+    "meeting_notes_db": "",
+    "projects_db": "",
+    "clients_db": "",
+    "people_db": ""
+  },
+  "vcfo": {
+    "db_path": "",
+    "enabled": false
+  },
+  "location": {
+    "lat": 33.749,
+    "lon": -84.388,
+    "name": "Atlanta"
+  }
+}
