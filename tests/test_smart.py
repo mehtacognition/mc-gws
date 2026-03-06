@@ -1,6 +1,6 @@
 import json
 from unittest.mock import patch, MagicMock
-from mcgws.commands.smart import run_briefing, run_chat
+from mcgws.commands.smart import run_briefing, run_chat, _parse_nudge
 
 
 def test_run_briefing_interactive(capsys):
@@ -72,3 +72,33 @@ def test_run_chat(capsys):
 
     output = capsys.readouterr().out
     assert "calendar is clear" in output
+
+
+def test_parse_nudge_extracts_nudge_line():
+    text = "Full briefing content here.\n\nNUDGE: 81F | 4 meetings | Board prep is priority."
+    body, nudge = _parse_nudge(text)
+    assert "Full briefing content" in body
+    assert "NUDGE:" not in body
+    assert "81F" in nudge
+    assert "Board prep" in nudge
+
+
+def test_parse_nudge_strips_whitespace():
+    text = "Body.\n\nNUDGE:   Weather is nice.  "
+    body, nudge = _parse_nudge(text)
+    assert nudge == "Weather is nice."
+    assert body.strip() == "Body."
+
+
+def test_parse_nudge_fallback_when_missing():
+    text = "The One Thing: Focus on client meeting.\n\nMore details here."
+    body, nudge = _parse_nudge(text)
+    assert body == text
+    assert "Focus on client meeting" in nudge
+
+
+def test_parse_nudge_handles_nudge_with_newlines_before():
+    text = "Content.\n\n\n\nNUDGE: Summary here."
+    body, nudge = _parse_nudge(text)
+    assert nudge == "Summary here."
+    assert body.strip() == "Content."

@@ -16,6 +16,29 @@ from mcgws.weather import fetch_weather, format_weather
 logger = logging.getLogger(__name__)
 
 
+def _parse_nudge(text: str) -> tuple:
+    """Parse NUDGE: line from Claude's response.
+
+    Returns:
+        (body, nudge) tuple. If no NUDGE: line found, nudge is first line truncated.
+    """
+    marker = "\nNUDGE:"
+    idx = text.find(marker)
+    if idx != -1:
+        body = text[:idx].rstrip()
+        nudge = text[idx + len(marker):].strip()
+        nudge = nudge.split("\n")[0].strip()
+        return body, nudge
+
+    # Fallback: use first line
+    first_line = text.split("\n")[0].strip()
+    for prefix in ["**The One Thing:**", "The One Thing:"]:
+        if first_line.startswith(prefix):
+            first_line = first_line[len(prefix):].strip()
+            break
+    return text, first_line[:200]
+
+
 def _get_config():
     return load_config()
 
