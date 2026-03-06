@@ -1,6 +1,6 @@
 import json
 from unittest.mock import patch, MagicMock
-from mcgws.commands.smart import run_briefing, run_chat, _parse_nudge
+from mcgws.commands.smart import run_briefing, run_chat, _parse_nudge, _handle_notify
 
 
 def test_run_briefing_interactive(capsys):
@@ -102,3 +102,83 @@ def test_parse_nudge_handles_nudge_with_newlines_before():
     body, nudge = _parse_nudge(text)
     assert nudge == "Summary here."
     assert body.strip() == "Content."
+
+
+def _make_notify_config(**overrides):
+    base = {
+        "account": "test@example.com",
+        "self_reminder_phone": "+15551234567",
+        "notify_max_chars": 1500,
+        "notify_email": True,
+        "notify_imessage": True,
+        "email_subject_prefix": "[Chief of Staff]",
+    }
+    base.update(overrides)
+    return base
+
+
+def test_handle_notify_sends_email_and_imessage():
+    config = _make_notify_config()
+    output = "Full briefing.\n\nNUDGE: Priority is client meeting."
+
+    with patch("mcgws.commands.smart.send_email_briefing") as mock_email:
+        with patch("mcgws.commands.smart.send_imessage") as mock_imsg:
+            _handle_notify(config, output, command_type="Morning Briefing")
+
+    mock_email.assert_called_once()
+    mock_imsg.assert_called_once()
+    imsg_text = mock_imsg.call_args[0][1]
+    assert "Priority is client meeting" in imsg_text
+    assert "Full briefing in email" in imsg_text
+
+
+def test_handle_notify_email_disabled():
+    config = _make_notify_config(notify_email=False)
+    output = "Content.\n\nNUDGE: Summary."
+
+    with patch("mcgws.commands.smart.send_email_briefing") as mock_email:
+        with patch("mcgws.commands.smart.send_imessage") as mock_imsg:
+            _handle_notify(config, output, command_type="Morning Briefing")
+
+    mock_email.assert_not_called()
+    mock_imsg.assert_called_once()
+    # When email disabled, iMessage gets full content (current behavior)
+    assert "Content." in mock_imsg.call_args[0][1]
+
+
+def test_handle_notify_imessage_disabled():
+    config = _make_notify_config(notify_imessage=False)
+    output = "Content.\n\nNUDGE: Summary."
+
+    with patch("mcgws.commands.smart.send_email_briefing") as mock_email:
+        with patch("mcgws.commands.smart.send_imessage") as mock_imsg:
+            _handle_notify(config, output, command_type="Morning Briefing")
+
+    mock_email.assert_called_once()
+    mock_imsg.assert_not_called()
+
+
+def test_handle_notify_email_failure_falls_back_to_full_imessage():
+    config = _make_notify_config()
+    output = "Full briefing.\n\nNUDGE: Summary."
+
+    with patch("mcgws.commands.smart.send_email_briefing", side_effect=Exception("Gmail down")):
+        with patch("mcgws.commands.smart.send_imessage") as mock_imsg:
+            _handle_notify(config, output, command_type="Morning Briefing")
+
+    mock_imsg.assert_called_once()
+    # Should fall back to full content, not just nudge
+    assert "Full briefing" in mock_imsg.call_args[0][1]
+
+
+def test_handle_notify_subject_line_format():
+    config = _make_notify_config()
+    output = "Content.\n\nNUDGE: Summary."
+
+    with patch("mcgws.commands.smart.send_email_briefing") as mock_email:
+        with patch("mcgws.commands.smart.send_imessage"):
+            _handle_notify(config, output, command_type="Morning Briefing")
+
+    subject = mock_email.call_args[0][1]
+    assert "[Chief of Staff]" in subject
+    assert "Morning Briefing" in subject

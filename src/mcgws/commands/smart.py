@@ -9,7 +9,8 @@ from pathlib import Path
 from mcgws.config import load_config, load_followups
 from mcgws.gws import gws_call, GWSError
 from mcgws.intelligence import call_claude
-from mcgws.notify import send_imessage, notify_error
+from mcgws.notify import send_imessage, notify_error, send_email_briefing
+from mcgws.templates import wrap_briefing_html
 from mcgws.formatting import truncate_for_notify
 from mcgws.weather import fetch_weather, format_weather
 
@@ -138,16 +139,46 @@ def _fetch_vcfo_snapshot(config: dict) -> str:
         return ""
 
 
-def _handle_notify(config: dict, output: str):
-    """Send output as iMessage if --notify flag is present."""
+def _handle_notify(config: dict, output: str, command_type: str = "Briefing"):
+    """Send briefing via email (full HTML) and iMessage (nudge).
+
+    Fallback: if email fails, send full content via iMessage (original behavior).
+    """
+    from datetime import datetime as _dt
+
     phone = config.get("self_reminder_phone")
-    if not phone:
-        return
-    max_chars = config.get("notify_max_chars", 1500)
-    truncated = truncate_for_notify(output, max_chars)
-    if len(output) > max_chars:
-        truncated += "\n\nFull details: run `g briefing` in terminal."
-    send_imessage(phone, truncated)
+    send_email = config.get("notify_email", True)
+    send_imsg = config.get("notify_imessage", True)
+    prefix = config.get("email_subject_prefix", "[Chief of Staff]")
+
+    body, nudge = _parse_nudge(output)
+    date_str = _dt.now().strftime("%a %b %-d")
+    subject = f"{prefix} {command_type} \u2014 {date_str}"
+
+    email_sent = False
+
+    # Step 1: Send email
+    if send_email:
+        try:
+            html = wrap_briefing_html(body, command_type, date_str)
+            send_email_briefing(config, subject, html)
+            email_sent = True
+        except Exception as e:
+            logger.warning(f"Email send failed, falling back to iMessage: {e}")
+
+    # Step 2: Send iMessage
+    if send_imsg and phone:
+        if email_sent:
+            # Nudge only
+            nudge_text = f"{nudge}\n\nFull briefing in email."
+            send_imessage(phone, nudge_text)
+        else:
+            # Fallback: full content via iMessage (original behavior)
+            max_chars = config.get("notify_max_chars", 1500)
+            truncated = truncate_for_notify(output, max_chars)
+            if len(output) > max_chars:
+                truncated += "\n\nFull details: run `g briefing` in terminal."
+            send_imessage(phone, truncated)
 
 
 def run_briefing(args: list):
