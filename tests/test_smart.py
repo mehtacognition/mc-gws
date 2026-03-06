@@ -104,6 +104,26 @@ def test_parse_nudge_handles_nudge_with_newlines_before():
     assert body.strip() == "Content."
 
 
+def test_parse_nudge_fallback_bold_header_without_colon():
+    """The exact failure case: haiku outputs **The One Thing** on its own line."""
+    text = "**The One Thing**\nHolton-Arms SP rollout is your priority today.\n\nMore details."
+    body, nudge = _parse_nudge(text)
+    assert body == text
+    assert "Holton-Arms" in nudge
+
+
+def test_parse_nudge_fallback_bold_header_with_colon():
+    text = "**The One Thing:** Board prep at 2pm is critical.\n\nCalendar details."
+    body, nudge = _parse_nudge(text)
+    assert "Board prep" in nudge
+
+
+def test_parse_nudge_fallback_markdown_heading():
+    text = "# Morning Briefing\n\n## The One Thing\nClient meeting at 10am.\n\nMore."
+    body, nudge = _parse_nudge(text)
+    assert "Client meeting" in nudge
+
+
 def _make_notify_config(**overrides):
     base = {
         "account": "test@example.com",

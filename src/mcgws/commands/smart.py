@@ -17,10 +17,10 @@ from mcgws.weather import fetch_weather, format_weather
 logger = logging.getLogger(__name__)
 
 NUDGE_INSTRUCTION = (
-    '\n\nFinally, output a single line at the very end prefixed with "NUDGE:" containing '
-    "a one-sentence iMessage summary with today's weather, meeting count, and the single "
-    "most important agenda item. Example: "
-    '"NUDGE: 81F, clear | 4 meetings | Board prep with Sarah at 2pm is your priority today."'
+    '\n\nIMPORTANT — You MUST output a final line starting with "NUDGE:" as the very last line. '
+    "This is a one-sentence iMessage summary with today's weather, meeting count, and the single "
+    "most important agenda item. This line is required. Example:\n"
+    'NUDGE: 75F clear | 4 meetings | Board prep with Sarah at 2pm is your priority today.'
 )
 
 
@@ -38,13 +38,25 @@ def _parse_nudge(text: str) -> tuple:
         nudge = nudge.split("\n")[0].strip()
         return body, nudge
 
-    # Fallback: use first line
-    first_line = text.split("\n")[0].strip()
-    for prefix in ["**The One Thing:**", "The One Thing:"]:
-        if first_line.startswith(prefix):
-            first_line = first_line[len(prefix):].strip()
-            break
-    return text, first_line[:200]
+    # Fallback: search for "The One Thing" content anywhere in the text
+    import re
+    # Match patterns like "**The One Thing:** content", "The One Thing: content",
+    # "## The One Thing\ncontent", "**The One Thing**\ncontent"
+    match = re.search(
+        r'(?:\*\*)?The One Thing(?:\*\*)?[:\s]*\n?(.+)',
+        text,
+    )
+    if match:
+        nudge = match.group(1).strip().strip('*').strip()
+        if nudge:
+            return text, nudge[:200]
+
+    # Last resort: first non-header, non-empty line
+    for line in text.split("\n"):
+        stripped = line.strip().lstrip('#').strip().strip('*').strip()
+        if stripped and not stripped.startswith('---'):
+            return text, stripped[:200]
+    return text, ""
 
 
 def _get_config():
