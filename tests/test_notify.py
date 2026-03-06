@@ -1,5 +1,5 @@
 from unittest.mock import patch, MagicMock
-from mcgws.notify import send_imessage, notify_error
+from mcgws.notify import send_imessage, notify_error, send_email_briefing
 
 
 def test_send_imessage_success():
@@ -59,3 +59,33 @@ def test_notify_error_swallows_exceptions():
     with patch("mcgws.notify.send_imessage", side_effect=RuntimeError("fail")):
         # Should not raise
         notify_error(config, "Something broke")
+
+
+def test_send_email_briefing_success():
+    config = {"account": "test@example.com"}
+
+    with patch("mcgws.notify.gws_call", return_value={"id": "msg123"}) as mock_gws:
+        send_email_briefing(config, "[Chief of Staff] Briefing — Thu Mar 6", "<html>body</html>")
+
+    mock_gws.assert_called_once()
+    call_kwargs = mock_gws.call_args
+    assert call_kwargs[1]["account"] == "test@example.com"
+
+
+def test_send_email_briefing_sends_html_mime():
+    config = {"account": "test@example.com"}
+
+    with patch("mcgws.notify.gws_call") as mock_gws:
+        send_email_briefing(config, "Subject", "<html>test</html>")
+
+    json_body = mock_gws.call_args[1]["json_body"]
+    assert "raw" in json_body
+
+
+def test_send_email_briefing_raises_on_failure():
+    config = {"account": "test@example.com"}
+
+    with patch("mcgws.notify.gws_call", side_effect=Exception("Gmail API error")):
+        import pytest
+        with pytest.raises(Exception, match="Gmail API error"):
+            send_email_briefing(config, "Subject", "<html>test</html>")

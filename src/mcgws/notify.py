@@ -1,7 +1,11 @@
 """iMessage notification and error reporting."""
 
+import base64
 import logging
 import subprocess
+from email.mime.text import MIMEText
+
+from mcgws.gws import gws_call
 
 logger = logging.getLogger(__name__)
 
@@ -42,3 +46,22 @@ def notify_error(config: dict, message: str):
         send_imessage(phone, message)
     except Exception as e:
         logger.warning(f"Could not send error notification: {e}")
+
+
+def send_email_briefing(config: dict, subject: str, html_body: str):
+    """Send an HTML briefing email to self via Gmail API."""
+    account = config["account"]
+
+    msg = MIMEText(html_body, "html")
+    msg["To"] = account
+    msg["From"] = account
+    msg["Subject"] = subject
+
+    raw = base64.urlsafe_b64encode(msg.as_bytes()).decode("ascii")
+
+    gws_call(
+        "gmail", "users", "messages", "send",
+        json_body={"raw": raw},
+        params={"userId": "me"},
+        account=account,
+    )
