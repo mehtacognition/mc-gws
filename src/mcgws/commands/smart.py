@@ -16,6 +16,13 @@ from mcgws.weather import fetch_weather, format_weather
 
 logger = logging.getLogger(__name__)
 
+NUDGE_INSTRUCTION = (
+    '\n\nFinally, output a single line at the very end prefixed with "NUDGE:" containing '
+    "a one-sentence iMessage summary with today's weather, meeting count, and the single "
+    "most important agenda item. Example: "
+    '"NUDGE: 81F, clear | 4 meetings | Board prep with Sarah at 2pm is your priority today."'
+)
+
 
 def _parse_nudge(text: str) -> tuple:
     """Parse NUDGE: line from Claude's response.
@@ -205,11 +212,12 @@ def run_briefing(args: list):
             "Then cover calendar, email highlights, pending tasks, "
             "and any stale follow-ups. Suggest specific actions with `g` CLI commands."
         )
+        prompt += NUDGE_INSTRUCTION
 
         output = call_claude(prompt, json.dumps(context, default=str), model=model, config=config)
 
         if "--notify" in args:
-            _handle_notify(config, output)
+            _handle_notify(config, output, command_type="Morning Briefing")
         else:
             print(output)
 
@@ -237,10 +245,11 @@ def run_midday(args: list):
             "Generate a midday check-in. Focus on: anything urgent that arrived this morning, "
             "afternoon meeting prep needed, and any follow-ups becoming stale. Be brief."
         )
+        prompt += NUDGE_INSTRUCTION
         output = call_claude(prompt, json.dumps(context, default=str), model=model, config=config)
 
         if "--notify" in args:
-            _handle_notify(config, output)
+            _handle_notify(config, output, command_type="Midday Check-in")
         else:
             print(output)
     except Exception as e:
@@ -334,11 +343,12 @@ def run_wrap(args: list):
             "and what's coming tomorrow. Flag anything that needs attention before tomorrow. "
             "End with a suggested first action for tomorrow morning."
         )
+        prompt += NUDGE_INSTRUCTION
 
         output = call_claude(prompt, json.dumps(context, default=str), model=model, config=config)
 
         if "--notify" in args:
-            _handle_notify(config, output)
+            _handle_notify(config, output, command_type="End-of-Day Wrap")
         else:
             print(output)
     except Exception as e:
@@ -401,11 +411,12 @@ def run_weekly(args: list):
             "5. Financial snapshot if available. "
             "6. Any patterns you notice (meeting load, over-indexing on one client, etc.)."
         )
+        prompt += NUDGE_INSTRUCTION
 
         output = call_claude(prompt, json.dumps(context, default=str), model=model, config=config)
 
         if "--notify" in args:
-            _handle_notify(config, output)
+            _handle_notify(config, output, command_type="Weekly Digest")
         else:
             print(output)
     except Exception as e:
