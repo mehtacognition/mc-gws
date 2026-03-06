@@ -28,6 +28,9 @@ DEFAULT_CONFIG = {
     "priority_keywords": ["invoice", "contract", "deadline", "urgent"],
     "followup_stale_days": 3,
     "notify_max_chars": 1500,
+    "notify_email": True,
+    "notify_imessage": True,
+    "email_subject_prefix": "[Chief of Staff]",
     "models": {"scheduled": "haiku", "interactive": "default"},
     "notion": {
         "meeting_notes_db": "",
