@@ -50,7 +50,7 @@ Download the latest release from [github.com/googleworkspace/cli/releases](https
 6. Save it: `mkdir -p ~/.config/gws && cp ~/Downloads/client_secret_*.json ~/.config/gws/client_secret.json`
 7. Authenticate:
    ```bash
-   gws auth login --account you@example.com --scopes gmail,calendar,drive,sheets,tasks,people
+   gws auth login --account you@example.com --scopes "https://www.googleapis.com/auth/gmail.modify,https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/drive,https://www.googleapis.com/auth/spreadsheets,https://www.googleapis.com/auth/tasks,https://www.googleapis.com/auth/contacts.readonly"
    ```
 
 ### 3. Install mc-gws
