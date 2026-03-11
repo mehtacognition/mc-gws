@@ -150,7 +150,7 @@ def _fetch_vcfo_snapshot(config: dict) -> str:
         return ""
     try:
         import sys
-        sys.path.insert(0, str(Path.home() / "Documents" / "cfo-project" / "src"))
+        sys.path.insert(0, str(Path.home() / "Documents" / "MehtaCognition" / "Projects" / "cfo-project" / "src"))
         from vcfo.query import snapshot
         return snapshot(Path(db_path).expanduser())
     except Exception as e:
