@@ -24,3 +24,12 @@ docs/plans/
 
 # Pytest
 .pytest_cache/
+
+# Secrets and credentials — never commit these
+.env
+.env.*
+*.key
+*.pem
+*secret*
+*credential*
+*token*.json
